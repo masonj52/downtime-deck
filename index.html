@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Downtime Deck</title>
+<meta name="description" content="Short, finite flashcard sessions for spare minutes. Pick one theme and learn something instead of scrolling.">
+<meta name="theme-color" content="#E9EDF1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E141B" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Downtime">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one-screen phone app — slim header, a single scrollable card in the middle, a thumb-zone action bar pinned at the bottom. Finite sessions, not a feed. */
+:root{
+  --bg:#E9EDF1; --surface:#FBFCFD; --ink:#16202B; --muted:#5B6877; --line:#D3DAE2; --accent:#1F4FD8; --accent-ink:#FFFFFF;
+  --good:#1E7A4B; --again:#B4471F;
+  --t-circ:#B86A1E; --t-c:#3E5C9A; --t-logic:#0F7F78; --t-prob:#7A4BB8; --t-mkt:#2F7D3B; --t-biz:#2B3F63; --t-art:#C2414F;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r:18px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E141B; --surface:#17202A; --ink:#E7ECF2; --muted:#93A1B1; --line:#2A3542; --accent:#7EA2FF; --accent-ink:#0B1220;
+  --good:#5BC28A; --again:#F08A5D;
+  --t-circ:#F0A35A; --t-c:#8FAEF0; --t-logic:#4FD1C5; --t-prob:#B996F0; --t-mkt:#73C77F; --t-biz:#9DB2DA; --t-art:#F2808C;
+  color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0E141B; --surface:#17202A; --ink:#E7ECF2; --muted:#93A1B1; --line:#2A3542; --accent:#7EA2FF; --accent-ink:#0B1220;
+  --good:#5BC28A; --again:#F08A5D;
+  --t-circ:#F0A35A; --t-c:#8FAEF0; --t-logic:#4FD1C5; --t-prob:#B996F0; --t-mkt:#73C77F; --t-biz:#9DB2DA; --t-art:#F2808C;
+  color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0}
+html{background:var(--bg)}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.app{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px 8px}
+.brand{font-family:var(--f-display);font-weight:800;font-size:1.15rem;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--ink);padding:0;cursor:pointer}
+.brand .pip{display:inline-grid;grid-template-columns:repeat(2,6px);gap:2px}
+.brand .pip i{width:6px;height:6px;border-radius:2px;display:block}
+.streak{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.streak b{color:var(--ink);font-family:var(--f-display);font-size:1rem}
+main{flex:1;min-height:0;overflow-y:auto;padding-block:4px 12px;-webkit-overflow-scrolling:touch}
+footer{padding-block:10px 14px;display:flex;gap:10px}
+
+button{font:inherit;cursor:pointer}
+button:focus-visible,.chip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{flex:1;min-height:54px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;font-size:1rem}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.again{color:var(--again);border-color:color-mix(in oklab, var(--again) 45%, var(--line))}
+.btn.good{background:var(--good);border-color:var(--good);color:var(--surface)}
+.btn.hl{box-shadow:0 0 0 3px color-mix(in oklab, var(--again) 35%, transparent)}
+.btn small{display:block;font-weight:400;font-size:.72rem;opacity:.8}
+
+/* Home */
+.hero{padding-block:14px 6px}
+.hero h1{font-family:var(--f-display);font-weight:800;font-size:clamp(2rem,9vw,2.6rem);line-height:1.02;letter-spacing:-.025em;margin:0;text-wrap:balance}
+.hero p{color:var(--muted);margin:10px 0 0;max-width:34ch}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 6px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.stat b{display:block;font-family:var(--f-display);font-size:1.6rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.label{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin:20px 0 8px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;color:var(--ink);border-radius:10px;padding:10px 4px;font-weight:700}
+.seg button small{display:block;font-weight:400;font-size:.72rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button[aria-pressed="true"] small{color:color-mix(in oklab, var(--bg) 75%, transparent)}
+.themes{display:flex;flex-direction:column;gap:8px}
+.theme{--tc:var(--muted);display:grid;grid-template-columns:1fr auto;grid-template-areas:"nm meta" "why meta";column-gap:12px;row-gap:2px;align-items:center;text-align:left;
+  border:1.5px solid color-mix(in oklab, var(--tc) 30%, var(--line));background:color-mix(in oklab, var(--tc) 7%, var(--surface));color:var(--ink);border-radius:16px;padding:14px 14px;min-width:0}
+.theme:active{transform:scale(.99)}
+.theme .nm{grid-area:nm;font-family:var(--f-display);font-weight:600;font-size:1.12rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.theme .nm i{width:11px;height:11px;border-radius:3px;background:var(--tc);flex:none}
+.theme .nm em{font-family:var(--f-body);font-style:normal;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--tc);border:1px solid color-mix(in oklab, var(--tc) 45%, transparent);border-radius:999px;padding:1px 7px}
+.theme .why{grid-area:why;font-size:.82rem;color:var(--muted);line-height:1.3;min-width:0}
+.theme .meta{grid-area:meta;display:flex;flex-direction:column;align-items:flex-end;gap:5px;width:84px}
+.theme .bar{width:100%;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.theme .bar u{display:block;height:100%;background:var(--tc);text-decoration:none}
+.theme .ct{font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;line-height:1.2}
+.hero .tag{margin-bottom:8px}
+.stat b small{font-size:.9rem;color:var(--muted);font-weight:600}
+.foothint{margin:0;flex:1;text-align:center;color:var(--muted);font-size:.9rem;padding-block:16px}
+.note{font-size:.8rem;color:var(--muted);margin:16px 0 4px}
+
+/* Session */
+.prog{display:flex;gap:4px;padding-block:2px 10px}
+.prog i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.prog i.done{background:var(--ink)}
+.prog i.now{background:var(--accent)}
+.card{--tc:var(--muted);background:color-mix(in oklab, var(--tc) 9%, var(--surface));border:1.5px solid color-mix(in oklab, var(--tc) 28%, var(--line));border-radius:var(--r);padding:18px 18px 20px;display:flex;flex-direction:column;gap:14px;touch-action:pan-y;transition:transform .25s ease, opacity .25s ease}
+.card .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tc);display:flex;align-items:center;gap:7px}
+.tag i{width:9px;height:9px;border-radius:3px;background:var(--tc)}
+.kind{font-size:.7rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;background:var(--surface)}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(1.3rem,5.6vw,1.6rem);line-height:1.22;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.q b{font-weight:800}
+pre.code{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:var(--f-mono);font-size:.86rem;line-height:1.55;overflow-x:auto;color:var(--ink)}
+code{font-family:var(--f-mono);font-size:.9em;background:color-mix(in oklab, var(--tc) 12%, transparent);padding:0 4px;border-radius:4px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 14px;font-size:1rem;min-height:48px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.opt[disabled]{cursor:default}
+.opt.right{border-color:var(--good);background:color-mix(in oklab, var(--good) 14%, var(--surface))}
+.opt.wrong{border-color:var(--again);background:color-mix(in oklab, var(--again) 12%, var(--surface))}
+.opt .mk{font-weight:700;font-size:.85rem;flex:none}
+.opt.right .mk{color:var(--good)} .opt.wrong .mk{color:var(--again)}
+.reveal{border-top:1px dashed color-mix(in oklab, var(--tc) 40%, var(--line));padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.ans{font-weight:700;font-size:1.08rem}
+.ex{margin:0;color:var(--ink);max-width:62ch}
+.ex + .ex{margin-top:2px}
+.swipehint{font-size:.74rem;color:var(--muted);text-align:center;margin-top:10px}
+
+/* Done */
+.done{padding-block:28px 10px;display:flex;flex-direction:column;gap:14px}
+.done h2{font-family:var(--f-display);font-weight:800;font-size:2.2rem;line-height:1.02;letter-spacing:-.02em;margin:0}
+.done p{margin:0;color:var(--muted);max-width:36ch}
+.recap{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.recap div{--tc:var(--muted);display:flex;gap:10px;align-items:baseline;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.92rem}
+.recap div i{width:9px;height:9px;border-radius:3px;background:var(--tc);flex:none;transform:translateY(1px)}
+.recap div span{flex:1;min-width:0}
+.recap div em{font-style:normal;font-size:.76rem;font-weight:700}
+.recap .g{color:var(--good)} .recap .a{color:var(--again)}
+
+@media (prefers-reduced-motion: reduce){ .card{transition:none} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <button class="brand" id="homeBtn" aria-label="Back to start"><span class="pip" aria-hidden="true"><i style="background:var(--t-circ)"></i><i style="background:var(--t-prob)"></i><i style="background:var(--t-mkt)"></i><i style="background:var(--t-art)"></i></span>Downtime Deck</button>
+    <div class="streak" id="streak"></div>
+  </header>
+  <main id="main" aria-live="polite"></main>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const TRACKS = {
+  circ:{name:"Circuits & E&M", why:"Ohm, Kirchhoff, RC — the 18-100 core"},
+  c:{name:"C & Memory", why:"Pointers, bits, the stack and heap"},
+  logic:{name:"Digital Logic", why:"Gates up to FPGAs"},
+  prob:{name:"Probability", why:"Quant-interview style puzzles"},
+  mkt:{name:"Markets", why:"The mechanics behind your portfolio"},
+  biz:{name:"Business", why:"Founder and consulting basics"},
+  art:{name:"Culture Map", why:"Art and music, period by period"}
+};
+const TC = {circ:"--t-circ",c:"--t-c",logic:"--t-logic",prob:"--t-prob",mkt:"--t-mkt",biz:"--t-biz",art:"--t-art"};
+
+/* q: prompt · code: optional · opts + a: multiple choice (a = correct text) · ans: answer for reveal cards · ex: explanation (array of paragraphs) */
+const CARDS = [
+// ---------- Circuits & E&M ----------
+{id:"circ1",t:"circ",q:"A 9 V battery is connected across a 3 kΩ resistor. What current flows?",opts:["3 mA","27 mA","0.33 mA","3 A"],a:"3 mA",ex:["I = V / R = 9 V ÷ 3000 Ω = 0.003 A = <b>3 mA</b>.","Habit worth building: carry the units. kΩ in the denominator gives mA when V is in volts."]},
+{id:"circ2",t:"circ",q:"Three wires meet at a node. 5 mA flows <b>in</b> on wire A, 2 mA flows <b>out</b> on wire B. What does wire C carry?",opts:["3 mA out","3 mA in","7 mA out","Can't tell"],a:"3 mA out",ex:["Kirchhoff's Current Law: current in = current out at any node, because charge can't pile up.","5 in = 2 out + C, so C = <b>3 mA out</b>."]},
+{id:"circ3",t:"circ",q:"Two 1 kΩ resistors are connected in <b>parallel</b>. What's the equivalent resistance?",opts:["500 Ω","2 kΩ","1 kΩ","250 Ω"],a:"500 Ω",ex:["1/R = 1/1k + 1/1k → R = <b>500 Ω</b>.","Parallel resistance is always smaller than the smallest branch. You've added another path for current, so it's easier to flow."]},
+{id:"circ4",t:"circ",q:"Voltage divider: 10 V source, R1 = 2 kΩ on top, R2 = 3 kΩ on the bottom. What's the voltage across R2?",opts:["6 V","4 V","5 V","3.3 V"],a:"6 V",ex:["V<sub>out</sub> = V<sub>in</sub> · R2 / (R1 + R2) = 10 · 3/5 = <b>6 V</b>.","The bigger resistor gets the bigger share of the voltage. This one formula shows up constantly in 18-100 labs."]},
+{id:"circ5",t:"circ",q:"A component draws 100 mA at 5 V. How much power does it dissipate?",opts:["0.5 W","50 W","0.02 W","5 W"],a:"0.5 W",ex:["P = V · I = 5 × 0.1 = <b>0.5 W</b>.","This is why resistors have wattage ratings. A standard ¼ W resistor here would overheat."]},
+{id:"circ6",t:"circ",q:"In a DC circuit that has settled (steady state), a capacitor behaves like a ___ and an inductor behaves like a ___.",ans:"Capacitor → open circuit. Inductor → short (a plain wire).",ex:["A capacitor blocks steady DC once it's charged, so no current passes. An inductor only resists <i>changes</i> in current, so with constant current it's just wire.","Shortcut for exam problems: redraw the circuit with caps removed and inductors replaced by wires, then solve."]},
+{id:"circ7",t:"circ",q:"R = 10 kΩ, C = 100 µF. What's the RC time constant, and how charged is the capacitor after one τ?",ans:"τ = 1 second; about 63% charged.",ex:["τ = R·C = 10,000 × 0.0001 = 1 s.","After 1τ: ~63%. After 5τ: ~99%, which engineers treat as fully charged."]},
+{id:"circ8",t:"circ",q:"A 12 V source drives two resistors in series. One drops 7 V. What does the other drop?",opts:["5 V","7 V","12 V","19 V"],a:"5 V",ex:["Kirchhoff's Voltage Law: voltages around a closed loop sum to zero. Rises equal drops.","12 = 7 + V → <b>5 V</b>."]},
+{id:"circ9",t:"circ",q:"Two point charges are moved to <b>twice</b> their original distance apart. The force between them becomes…",opts:["¼ as strong","½ as strong","2× as strong","Unchanged"],a:"¼ as strong",ex:["Coulomb's law: F = kq₁q₂ / r². Double r, and r² quadruples.","Same inverse-square shape as gravity, and as light intensity spreading from a bulb."]},
+{id:"circ10",t:"circ",q:"In a wire, electrons actually move from − to +. So why do circuit diagrams draw current flowing from + to −?",ans:"Convention. Current direction was defined before anyone knew electrons existed.",ex:["Benjamin Franklin guessed positive charge was what moved. Electrons were discovered over a century later, and the convention stuck.","It doesn't change any math. Pick conventional current and stay consistent."]},
+
+// ---------- C & Memory ----------
+{id:"c1",t:"c",q:"On a 64-bit machine with 4-byte ints, what do these print?",code:"int a[5];\nprintf(\"%zu\\n\", sizeof(a));\n\nvoid f(int a[]) {\n  printf(\"%zu\\n\", sizeof(a));\n}",ans:"20, then 8.",ex:["In the scope where it's declared, <code>a</code> is a real array: 5 × 4 = 20 bytes.","Passed into a function, an array <b>decays</b> to a pointer. <code>sizeof</code> then gives pointer size (8 bytes). This is why C functions take the length as a separate argument."]},
+{id:"c2",t:"c",q:"What is x after this runs?",code:"int x = 5;\nint *p = &x;\n*p = 10;",opts:["10","5","The address of x","Compile error"],a:"10",ex:["<code>&x</code> is x's address. <code>p</code> stores it. <code>*p</code> means “the thing p points to,” so writing to <code>*p</code> writes to x."]},
+{id:"c3",t:"c",q:"What does this print?",code:"int a[] = {10, 20, 30};\nprintf(\"%d\", *(a + 1));",opts:["20","11","10","An address"],a:"20",ex:["<code>a + 1</code> moves one <i>element</i> forward (4 bytes for an int), not one byte. Then <code>*</code> reads it.","<code>a[i]</code> is literally defined as <code>*(a + i)</code>."]},
+{id:"c4",t:"c",q:"What's wrong with this function?",code:"int *make(void) {\n  int x = 42;\n  return &x;\n}",ans:"It returns a pointer to a local variable, which is gone once the function returns (a dangling pointer).",ex:["Locals live on the <b>stack</b>, and their memory is reclaimed when the function exits.","To return memory that outlives the call, allocate on the <b>heap</b> with <code>malloc</code>, and have the caller <code>free</code> it later."]},
+{id:"c5",t:"c",q:"In 8-bit two's complement, how is <b>−1</b> stored?",opts:["11111111","10000001","00000001","01111111"],a:"11111111",ex:["Two's complement of x: flip all bits, add 1. For 1 (00000001): flip → 11111110, +1 → <b>11111111</b> (0xFF).","Range of a signed 8-bit value: −128 to 127."]},
+{id:"c6",t:"c",q:"If <code>x = 12</code>, what is <code>x & (x - 1)</code>?",opts:["8","11","0","4"],a:"8",ex:["12 = 1100, 11 = 1011. AND → 1000 = <b>8</b>.","The trick clears the lowest set bit. If the result is 0 (and x > 0), x was a power of two. Common in interviews."]},
+{id:"c7",t:"c",q:"How many bytes does the string literal <code>\"hi\"</code> occupy?",opts:["3","2","4","8"],a:"3",ex:["'h', 'i', and the null terminator <code>'\\0'</code> that marks the end.","Forgetting room for <code>'\\0'</code> is a classic buffer-overflow bug."]},
+{id:"c8",t:"c",q:"What value does u hold? (32-bit unsigned int)",code:"unsigned int u = 0;\nu = u - 1;",opts:["4294967295","-1","0","Undefined"],a:"4294967295",ex:["Unsigned arithmetic wraps around modulo 2³². 0 − 1 becomes the maximum value, 2³² − 1.","Signed overflow, by contrast, is undefined behavior in C."]},
+{id:"c9",t:"c",q:"What does C give for <code>7 / 2</code> and for <code>7 / 2.0</code>?",ans:"3 and 3.5.",ex:["Two ints → integer division, truncating toward zero. If either operand is a double, the other gets promoted, and you get 3.5.","Python 3 hides this (7/2 is 3.5; 7//2 is 3). C doesn't."]},
+{id:"c10",t:"c",q:"A loop calls <code>malloc</code> every iteration and never calls <code>free</code>. The program doesn't crash. What's the problem?",ans:"A memory leak. Memory use grows until the program ends or runs out.",ex:["Heap memory stays allocated until you free it. C has no garbage collector.","Tools like <code>valgrind</code> catch this, and you'll meet it in 15-122 and beyond."]},
+
+// ---------- Digital Logic ----------
+{id:"logic1",t:"logic",q:"How do you build a NOT gate using only a NAND gate?",ans:"Tie both NAND inputs together.",ex:["NAND(A, A) = NOT(A AND A) = NOT A.","NAND is <b>universal</b>: any logic circuit can be built from NANDs alone. Real chips lean on this because NAND is cheap in CMOS."]},
+{id:"logic2",t:"logic",q:"By De Morgan's law, NOT(A AND B) equals…",opts:["(NOT A) OR (NOT B)","(NOT A) AND (NOT B)","A OR B","NOT(A OR B)"],a:"(NOT A) OR (NOT B)",ex:["Break the bar, change the operator. AND ↔ OR flips when you push the NOT inside.","Same logic in code: <code>!(a && b)</code> is <code>!a || !b</code>."]},
+{id:"logic3",t:"logic",q:"What is <code>0x2F</code> in decimal?",opts:["47","32","215","63"],a:"47",ex:["2 × 16 + F(15) = <b>47</b>.","Each hex digit is exactly 4 bits, so 0x2F = 0010 1111. That's why hardware people think in hex."]},
+{id:"logic4",t:"logic",q:"A half adder takes bits A and B. Which gates produce Sum and Carry?",ans:"Sum = A XOR B. Carry = A AND B.",ex:["1 + 1 = 10 in binary: sum bit 0, carry 1. XOR is 1 only when exactly one input is 1, and AND catches the both-1 carry.","Chain full adders together and you get a ripple-carry adder, the start of an ALU."]},
+{id:"logic5",t:"logic",q:"A 4-to-1 multiplexer needs how many select lines?",opts:["2","4","1","3"],a:"2",ex:["k select lines choose among 2ᵏ inputs. 2 lines → 4 inputs.","A mux is a hardware if/else: the select bits decide which input reaches the output."]},
+{id:"logic6",t:"logic",q:"What's the difference between a latch and a flip-flop?",ans:"A latch is level-sensitive. A flip-flop is edge-triggered.",ex:["A latch passes input through the whole time its enable is high. A flip-flop only captures input at the instant the clock edge arrives.","Edge triggering is what makes synchronous design predictable. Everything updates in lockstep on the clock."]},
+{id:"logic7",t:"logic",q:"How many bits do you need to give a unique address to 1,000 items?",opts:["10","9","100","32"],a:"10",ex:["2⁹ = 512 is too few; 2¹⁰ = 1024 is enough.","General rule: ⌈log₂ n⌉ bits."]},
+{id:"logic8",t:"logic",q:"Why do high-frequency trading firms put logic on FPGAs instead of just writing fast software?",ans:"FPGAs run the logic as actual circuits, giving very low and very predictable latency.",ex:["An FPGA is a chip of configurable logic blocks and wiring you program with a hardware description language (Verilog/VHDL). Market data can be parsed and acted on in hardware, without an OS, cache misses, or scheduler jitter.","Predictability matters as much as speed. A trade that's usually fast but occasionally slow loses to one that's always fast."]},
+{id:"logic9",t:"logic",q:"The slowest path through a circuit's logic (between flip-flops) takes 2 ns. What's the maximum clock frequency?",opts:["500 MHz","2 GHz","200 MHz","50 MHz"],a:"500 MHz",ex:["f = 1 / 2 ns = 500 MHz.","That slowest path is the <b>critical path</b>. Shortening it is how hardware engineers raise clock speed."]},
+{id:"logic10",t:"logic",q:"FPGAs are built from LUTs (look-up tables). How many different Boolean functions can a 4-input LUT implement?",opts:["65,536","16","256","4"],a:"65,536",ex:["4 inputs → 16 rows in the truth table. Each row's output can be 0 or 1, so 2¹⁶ = 65,536 possible functions.","A LUT is just a tiny memory storing a truth table. That's why it can implement <i>any</i> function of its inputs."]},
+
+// ---------- Probability ----------
+{id:"prob1",t:"prob",q:"Monty Hall: you pick door 1. The host, who knows where the car is, opens door 3 to show a goat. Should you switch to door 2?",opts:["Yes, switching wins 2/3","Doesn't matter, it's 1/2","No, stay wins 2/3"],a:"Yes, switching wins 2/3",ex:["Your first pick is right 1/3 of the time. The host's choice doesn't change that, so the other door holds the remaining 2/3.","Intuition pump: with 100 doors, host opens 98 goats. Would you stick with your first random pick?"]},
+{id:"prob2",t:"prob",q:"A disease affects 1% of people. A test is 99% accurate both ways. You test positive. Chance you have it?",opts:["50%","99%","90%","1%"],a:"50%",ex:["Out of 10,000 people: 100 sick → 99 test positive. 9,900 healthy → 99 false positives. 99 / 198 = <b>50%</b>.","Base rates dominate when the condition is rare. This is Bayes' rule, and it shows up everywhere in ML."]},
+{id:"prob3",t:"prob",q:"How many people do you need in a room for a better than 50% chance two share a birthday?",opts:["23","183","50","366"],a:"23",ex:["With 23 people there are 253 pairs. Each pair has a small chance of matching, but there are many pairs.","P(no match) = 365/365 × 364/365 × … × 343/365 ≈ 49.3%."]},
+{id:"prob4",t:"prob",q:"You flip a fair coin until you get two heads in a row. Expected number of flips?",opts:["6","4","3","8"],a:"6",ex:["Set E = expected flips from scratch. Solving the states gives E = 6.","Surprise: waiting for HT takes only 4 on average. After an H, a failed HH attempt sends you back to start, but a failed HT attempt (another H) keeps you one step in."]},
+{id:"prob5",t:"prob",q:"10 people check hats; the hats are handed back at random. Expected number who get their own hat back?",opts:["1","0.1","10","About 3.7"],a:"1",ex:["Each person has a 1/10 chance. By <b>linearity of expectation</b>, add them: 10 × 1/10 = 1.","Linearity works even though the events are dependent. That's why it cracks so many interview puzzles. The answer is 1 for any number of people."]},
+{id:"prob6",t:"prob",q:"X and Y are independent, with standard deviations 3 and 4. What's the standard deviation of X + Y?",opts:["5","7","12","1"],a:"5",ex:["Variances add for independent variables, standard deviations don't. 9 + 16 = 25, √25 = <b>5</b>.","This is the math behind diversification: combining uncorrelated risks grows total risk slower than the sum."]},
+{id:"prob7",t:"prob",q:"You win an even-money bet 60% of the time. What fraction of your bankroll does the Kelly criterion say to bet?",opts:["20%","60%","10%","100%"],a:"20%",ex:["For even-money bets, Kelly fraction = p − q = 0.6 − 0.4 = <b>20%</b>.","Betting more than Kelly increases risk and actually lowers long-run growth. Many traders bet “half Kelly” to cut volatility."]},
+{id:"prob8",t:"prob",q:"A fair coin just landed heads 5 times in a row. Probability the next flip is heads?",opts:["1/2","1/64","Less than 1/2","More than 1/2"],a:"1/2",ex:["Independent flips have no memory. Believing otherwise is the <b>gambler's fallacy</b>.","1/64 is the chance of six heads in a row <i>before you start</i>, not the chance of the next flip given the first five."]},
+{id:"prob9",t:"prob",q:"Expected number of rolls of a fair die until you see a 6?",opts:["6","3.5","3","Infinite"],a:"6",ex:["Geometric distribution: expected trials until first success = 1/p = 1/(1/6) = 6.","Same logic: a 2% daily chance of something means about 50 days on average."]},
+{id:"prob10",t:"prob",q:"I'll pay you the value of one fair die roll. Or you can roll, look, and decide to re-roll once (keeping the second). What's the re-roll game worth?",ans:"4.25.",ex:["Re-roll only if the first roll is below 3.5, the value of a fresh roll. Keep 4, 5, 6 (avg 5, half the time). Re-roll 1–3 for an expected 3.5.","0.5 × 5 + 0.5 × 3.5 = <b>4.25</b>. Classic quant-firm question: compare each outcome against the value of continuing."]},
+
+// ---------- Markets ----------
+{id:"mkt1",t:"mkt",q:"At 8% annual return, roughly how long until money doubles?",opts:["9 years","12.5 years","8 years","6 years"],a:"9 years",ex:["Rule of 72: 72 ÷ 8 = 9.","Works for anything compounding, including inflation. At 3% inflation, prices double in about 24 years."]},
+{id:"mkt2",t:"mkt",q:"$10,000 invested for 30 years at 7% versus 6% (a 1% annual fee). How big is the gap at the end?",opts:["About $19,000","About $3,000","About $1,000","About $300"],a:"About $19,000",ex:["1.07³⁰ → ~$76,100. 1.06³⁰ → ~$57,400. The 1% fee costs about a quarter of the final value.","Small fees compound just like returns do. This is why low-cost index funds matter over decades."]},
+{id:"mkt3",t:"mkt",q:"Interest rates rise. What happens to the price of a bond you already own?",opts:["It falls","It rises","No change","It depends on the stock market"],a:"It falls",ex:["New bonds now pay more, so your lower-coupon bond is worth less to a buyer. Its price drops until its yield matches the market.","Longer maturities swing more. That sensitivity is called duration."]},
+{id:"mkt4",t:"mkt",q:"A stock trades at $100 with $5 of annual earnings per share. What's its P/E, and what does it mean?",ans:"P/E = 20. You pay $20 for each $1 of yearly earnings.",ex:["Flip it for the earnings yield: 5/100 = 5%. Compare that to bond yields for a rough sense of value.","High P/E means the market expects fast growth. It's not automatically \"expensive\"."]},
+{id:"mkt5",t:"mkt",q:"Your S&P 500 index fund is weighted by market cap. What does that mean for owning big tech stocks separately on top?",ans:"You double up. The index already holds the biggest companies at the heaviest weights.",ex:["Market-cap weighting means the largest few companies make up a big share of the index, at times more than a third of the S&P 500.","Adding the same names as separate holdings concentrates you further in one theme. Worth knowing when you set allocation buckets."]},
+{id:"mkt6",t:"mkt",q:"You're a KRW-based investor. The S&P 500 rises 10% in USD, but the dollar falls 10% against the won. Your return in won?",opts:["About −1%","0%","+10%","−10%"],a:"About −1%",ex:["1.10 × 0.90 = 0.99 → about <b>−1%</b>.","Currency moves are a second source of return (or loss) for foreign investors, independent of how the stocks do."]},
+{id:"mkt7",t:"mkt",q:"Historically, does investing a lump sum all at once or dollar-cost averaging (DCA) over a year usually come out ahead?",ans:"Lump sum, about two-thirds of the time.",ex:["Markets rise more often than they fall, so money invested sooner tends to have more time in the market. Vanguard's historical studies found lump sum ahead roughly two-thirds of the time.","DCA's real value is behavioral: less regret if you buy right before a drop, and a plan you'll actually follow."]},
+{id:"mkt8",t:"mkt",q:"What does annual rebalancing actually do?",ans:"Sells what's grown beyond target and buys what's lagged, restoring your intended risk level.",ex:["Without it, the winning asset slowly takes over and the portfolio drifts riskier than you planned.","It enforces \"buy low, sell high\" mechanically, with no forecasting needed."]},
+{id:"mkt9",t:"mkt",q:"Your portfolio returns 7% in a year with 3% inflation. What's your real return?",opts:["About 3.9%","10%","4% exactly","7%"],a:"About 3.9%",ex:["Exact: 1.07 / 1.03 − 1 ≈ 3.88%. The quick estimate 7 − 3 = 4% is close enough for mental math.","Real return is what actually grows your purchasing power."]},
+{id:"mkt10",t:"mkt",q:"Two assets each have the same volatility. When does combining them 50/50 reduce portfolio volatility?",ans:"Whenever their correlation is below 1.",ex:["If they move perfectly together, mixing does nothing. The less correlated they are, the more their swings cancel.","This is why gold or bonds can sit in a stock-heavy portfolio: not for return, but because they often move differently."]},
+
+// ---------- Business ----------
+{id:"biz1",t:"biz",q:"A startup spends $200 to acquire a customer (CAC). Each customer brings $500 of gross profit over their lifetime (LTV). Healthy?",ans:"Borderline. LTV:CAC is 2.5:1, and the common rule of thumb is 3:1 or better.",ex:["Below 1:1 you lose money on every customer. Way above 5:1 might mean you're underinvesting in growth.","Also check payback period: how many months until a customer's profit covers their CAC."]},
+{id:"biz2",t:"biz",q:"Revenue is $100. Cost of goods sold is $30. What's the gross margin?",opts:["70%","30%","$70","130%"],a:"70%",ex:["(100 − 30) / 100 = <b>70%</b>.","Software often runs 70–90%. Hardware and retail are usually much lower. Margin shapes how much you can spend on growth."]},
+{id:"biz3",t:"biz",q:"Sean Ellis's product-market fit test asks users how they'd feel if they could no longer use the product. What's the benchmark?",ans:"40% or more answer \"very disappointed.\"",ex:["Below that, the product is nice-to-have. Above it, you likely have something people truly need.","Useful because it measures pull from users, not vanity metrics like signups."]},
+{id:"biz4",t:"biz",q:"$600,000 in the bank, burning $50,000 a month. What's the runway?",opts:["12 months","6 months","50 months","3 months"],a:"12 months",ex:["600 ÷ 50 = 12.","Founders usually start fundraising with 6+ months left, because raising takes months."]},
+{id:"biz5",t:"biz",q:"You've spent 3 months on a project that's clearly failing. \"We've invested too much to stop now.\" What's the flaw?",ans:"Sunk cost fallacy. Past spending can't be recovered, so only future costs and benefits should drive the decision.",ex:["The right question: knowing what I know now, would I start this today?","Hard to apply in groups, where stopping feels like admitting a mistake."]},
+{id:"biz6",t:"biz",q:"In Lean Startup thinking, what's the main purpose of an MVP?",opts:["To learn, as cheaply as possible","To launch a polished first version","To impress investors","To cut costs"],a:"To learn, as cheaply as possible",ex:["Eric Ries frames it as the fastest way through build → measure → learn. The goal is validated learning about customers.","A landing page or a manual service behind the scenes can be an MVP."]},
+{id:"biz7",t:"biz",q:"BLUF, from military writing, is also how consultants are taught to communicate. What does it stand for?",ans:"Bottom Line Up Front.",ex:["Lead with the conclusion or the ask, then supporting reasons. Busy readers may only read the first line.","Consulting's version is Barbara Minto's Pyramid Principle: answer first, then grouped arguments, then data."]},
+{id:"biz8",t:"biz",q:"The SBI model gives feedback in three parts. What are they?",ans:"Situation, Behavior, Impact.",ex:["\"In yesterday's meeting (S), you cut off Ji-ho twice (B), and he stopped contributing (I).\"","It sticks to observable facts instead of judging character, so people get less defensive. Useful as a squad leader or an RA."]},
+{id:"biz9",t:"biz",q:"Why do network effects make some markets winner-take-most?",ans:"Each new user makes the product more valuable for everyone else, so the leader keeps pulling further ahead.",ex:["Messaging apps, marketplaces, and payment networks all work this way.","It also explains why such companies spend heavily early. Getting to critical mass first matters more than early profit."]},
+{id:"biz10",t:"biz",q:"You turn down a $25/hour tutoring gig to spend those hours building a side project. What's the opportunity cost of the project?",ans:"The $25/hour you gave up, plus anything else you could have done with that time.",ex:["Every choice costs the best alternative you didn't pick.","Thinking this way helps you price your time, and decide what's actually worth doing."]},
+
+// ---------- Culture Map ----------
+{id:"art1",t:"art",q:"Monet, Renoir, Degas, 1870s Paris. Loose brushwork, outdoor light, everyday scenes. What movement, and where did the name come from?",ans:"Impressionism, from Monet's painting \"Impression, Sunrise\" (1872).",ex:["A critic used the title to mock the 1874 group show as unfinished sketches. The painters adopted the name.","The big shift: painting how light <i>looks</i> in a moment, rather than idealized studio scenes."]},
+{id:"art2",t:"art",q:"Cézanne broke scenes into simple geometric planes. Which movement did that lead to?",opts:["Cubism","Pop Art","Baroque","Abstract Expressionism"],a:"Cubism",ex:["Picasso and Braque took Cézanne's geometry further around 1907–1914, showing an object from several viewpoints at once.","Cézanne is often called the father of modern art for this reason."]},
+{id:"art3",t:"art",q:"Which 1907 Picasso painting, now at MoMA, is often called the start of modern art's break with tradition?",opts:["Les Demoiselles d'Avignon","Guernica","The Old Guitarist","The Weeping Woman"],a:"Les Demoiselles d'Avignon",ex:["Five figures with fractured, mask-like faces and flattened space. It shocked even Picasso's friends.","Guernica (1937) is his anti-war mural, now in Madrid."]},
+{id:"art4",t:"art",q:"In 1917 Duchamp submitted a store-bought urinal signed \"R. Mutt\" as art. Why does it still matter?",ans:"It made the idea and the artist's choice count as art, not the craftsmanship.",ex:["\"Fountain\" was a readymade, an ordinary object reframed. It opened the door to conceptual art.","When you stand in front of a modern work and think \"I could do that,\" the response is usually: but you didn't think of it, and the idea is the work."]},
+{id:"art5",t:"art",q:"Pollock's drip paintings, Rothko's glowing color fields, New York in the late 1940s–50s. What movement?",opts:["Abstract Expressionism","Surrealism","Minimalism","Impressionism"],a:"Abstract Expressionism",ex:["Pollock is gesture and action. Rothko is color fields meant to overwhelm you emotionally.","This is when the center of the art world shifted from Paris to New York."]},
+{id:"art6",t:"art",q:"Warhol's Campbell's Soup Cans (1962, MoMA) belongs to which movement, and what was the point?",ans:"Pop Art. It treated mass-produced consumer imagery as subject matter worthy of art.",ex:["Warhol borrowed commercial methods like silkscreen, blurring the line between art and advertising.","Lichtenstein did the same with comic-book panels."]},
+{id:"art7",t:"art",q:"Put these music eras in order: Romantic, Baroque, Classical.",ans:"Baroque (~1600–1750) → Classical (~1750–1820) → Romantic (~1820–1900).",ex:["Baroque: Bach, Vivaldi, Handel. Dense counterpoint, ornament.","Classical: Haydn, Mozart. Clarity, balance, form. Romantic: Chopin, Brahms, Tchaikovsky. Big emotion, expanded orchestras."]},
+{id:"art8",t:"art",q:"Which composer is usually treated as the bridge from the Classical to the Romantic era?",opts:["Beethoven","Bach","Debussy","Vivaldi"],a:"Beethoven",ex:["Trained in Mozart and Haydn's forms, he stretched them with personal drama. His Third Symphony, \"Eroica\" (1804), is often named as the turning point."]},
+{id:"art9",t:"art",q:"Sonata form, the backbone of Classical symphonies, has three main sections. What are they?",ans:"Exposition, development, recapitulation.",ex:["Exposition: two contrasting themes. Development: the themes get broken apart and tossed through different keys. Recapitulation: they return, now resolved in the home key.","Once you know this, a symphony first movement stops sounding like a stream and starts sounding like a story."]},
+{id:"art10",t:"art",q:"Who sets the price of a painting: the gallery or the auction?",ans:"Both, in different markets. Galleries set prices on the primary market. Auctions discover prices on the secondary market.",ex:["Primary: a gallery sells new work and typically splits the sale with the artist. Secondary: resale, where auction houses like Christie's and Sotheby's let bidders set the price.","What pushes value up: provenance (ownership history), condition, rarity, museum exhibitions, and the artist's auction record."]}
+];
+
+const LENGTHS = [{n:3,label:"2 min"},{n:6,label:"5 min"},{n:10,label:"10 min"}];
+const INTERVALS = [0,1,3,7,16,35]; // days per box
+const KEY = "downtime-deck.v1";
+const DAY = 864e5;
+
+let S = load();
+function load(){
+  const d = {cards:{}, streak:{last:null,count:0}, sessions:0, lastTheme:null, len:1};
+  try{ const raw = localStorage.getItem(KEY); if(raw) Object.assign(d, JSON.parse(raw)); }catch(e){}
+  d.theme = null; // always start on the theme picker
+  return d;
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function today(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function yesterday(){ const d=new Date(Date.now()-DAY); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function liveStreak(){ const s=S.streak; return (s.last===today()||s.last===yesterday()) ? s.count : 0; }
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+const $ = id => document.getElementById(id);
+const main = $("main"), foot = $("foot");
+
+function counts(k){
+  const now=Date.now(); let mastered=0, due=0, seen=0, total=0;
+  CARDS.forEach(c=>{ if(c.t!==k) return; total++; const st=S.cards[c.id]; if(!st) return; seen++; if(st.b>=3) mastered++; if(st.due<=now) due++; });
+  return {mastered,due,seen,total};
+}
+function setThemeColor(k){
+  const r=document.documentElement.style;
+  if(k){ r.setProperty("--accent",`var(${TC[k]})`); r.setProperty("--theme",`var(${TC[k]})`); }
+  else { r.removeProperty("--accent"); r.removeProperty("--theme"); }
+}
+function renderStreak(){
+  const n=liveStreak();
+  $("streak").innerHTML = n ? `<b>${n}</b> day${n>1?"s":""} in a row` : `Start a streak`;
+}
+
+/* ---------- Theme picker (first screen every visit) ---------- */
+function picker(){
+  sess=null; S.theme=null; setThemeColor(null); renderStreak();
+  const tiles = Object.entries(TRACKS).map(([k,t])=>{
+    const {mastered,due,total}=counts(k);
+    const last = S.lastTheme===k;
+    return `<button class="theme" style="--tc:var(${TC[k]})" data-t="${k}">
+      <span class="nm"><i></i>${t.name}${last?`<em>Last time</em>`:""}</span>
+      <span class="why">${t.why}</span>
+      <span class="meta"><span class="bar"><u style="width:${Math.round(mastered/total*100)}%"></u></span>
+      <span class="ct">${mastered}/${total} solid${due?` · ${due} due`:""}</span></span></button>`;
+  }).join("");
+  main.innerHTML = `
+    <section class="hero">
+      <h1>A feed that ends.</h1>
+      <p>Pick one theme. You'll only see cards from it until you switch.</p>
+    </section>
+    <div class="label">Choose a theme</div>
+    <div class="themes">${tiles}</div>`;
+  foot.innerHTML = S.lastTheme
+    ? `<button class="btn primary" id="cont">Continue with ${TRACKS[S.lastTheme].name}</button>`
+    : `<p class="foothint">Tap a theme to begin.</p>`;
+  main.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>chooseTheme(b.dataset.t));
+  if(S.lastTheme) $("cont").onclick=()=>chooseTheme(S.lastTheme);
+  main.scrollTop=0;
+}
+function chooseTheme(k){ S.theme=k; S.lastTheme=k; save(); home(); }
+
+/* ---------- Theme home ---------- */
+function home(){
+  if(!S.theme) return picker();
+  sess=null; renderStreak();
+  const k=S.theme, t=TRACKS[k];
+  setThemeColor(k);
+  const {mastered,due,seen,total} = counts(k);
+  main.innerHTML = `
+    <section class="hero" style="--tc:var(${TC[k]})">
+      <span class="tag"><i></i>Theme</span>
+      <h1>${t.name}</h1>
+      <p>${t.why}. ${total} cards in this deck.</p>
+    </section>
+    <div class="stats">
+      <div class="stat"><b>${seen}<small>/${total}</small></b><span>Seen</span></div>
+      <div class="stat"><b>${mastered}</b><span>Solid</span></div>
+      <div class="stat"><b>${due}</b><span>Due now</span></div>
+    </div>
+    <div class="label">How long do you have?</div>
+    <div class="seg" role="group" aria-label="Session length">
+      ${LENGTHS.map((l,i)=>`<button aria-pressed="${S.len===i}" data-len="${i}">${l.label}<small>${l.n} cards</small></button>`).join("")}
+    </div>
+    <p class="note">Cards you mark “Again” open your next session. Cards you know come back after 1, 3, 7, 16, then 35 days. Progress saves on this phone.</p>`;
+  foot.innerHTML = `<button class="btn" id="switch">Switch theme</button><button class="btn primary" id="go">Start · ${LENGTHS[S.len].label}</button>`;
+  main.querySelectorAll("[data-len]").forEach(b=>b.onclick=()=>{S.len=+b.dataset.len;save();home();});
+  $("switch").onclick=picker;
+  $("go").onclick=start;
+  main.scrollTop=0;
+}
+
+/* ---------- Session ---------- */
+let sess=null;
+function pick(n){
+  const now=Date.now();
+  const pool=CARDS.filter(c=>c.t===S.theme);
+  // cards marked "Again" last time open the next session
+  const again=pool.filter(c=>S.cards[c.id] && S.cards[c.id].again).sort((a,b)=>S.cards[a.id].due-S.cards[b.id].due);
+  const due=pool.filter(c=>S.cards[c.id] && !S.cards[c.id].again && S.cards[c.id].due<=now).sort((a,b)=>S.cards[a.id].due-S.cards[b.id].due);
+  const fresh=shuffle(pool.filter(c=>!S.cards[c.id]));
+  const later=pool.filter(c=>S.cards[c.id] && !S.cards[c.id].again && S.cards[c.id].due>now).sort((a,b)=>S.cards[a.id].due-S.cards[b.id].due);
+  const mix=again.slice(0,n); let i=0,j=0;
+  // then interleave due and fresh so a session isn't all review
+  while(mix.length<n && (i<due.length||j<fresh.length)){
+    if(i<due.length) mix.push(due[i++]);
+    if(mix.length<n && j<fresh.length) mix.push(fresh[j++]);
+  }
+  for(const c of later){ if(mix.length>=n) break; mix.push(c); }
+  return mix;
+}
+function start(){
+  const q=pick(LENGTHS[S.len].n);
+  sess={queue:q.map(c=>({c,retry:false})), pos:0, results:[], t0:Date.now()};
+  show();
+}
+function show(){
+  const item=sess.queue[sess.pos]; if(!item) return finish();
+  const c=item.c, st=S.cards[c.id];
+  const kind = st && st.again ? "Missed last time" : (st ? "Review" : "New");
+  const prog = sess.queue.map((_,i)=>`<i class="${i<sess.pos?"done":i===sess.pos?"now":""}"></i>`).join("");
+  let body = `<div class="prog" aria-label="Card ${sess.pos+1} of ${sess.queue.length}">${prog}</div>
+    <article class="card" id="card" style="--tc:var(${TC[c.t]})">
+      <div class="top"><span class="tag"><i></i>${TRACKS[c.t].name}</span><span class="kind">${kind}</span></div>
+      <h2 class="q">${c.q}</h2>
+      ${c.code?`<pre class="code" id="code"></pre>`:""}
+      ${c.opts?`<div class="opts">${shuffle(c.opts).map(o=>`<button class="opt" data-o="${encodeURIComponent(o)}"><span>${o}</span><span class="mk"></span></button>`).join("")}</div>`:""}
+      <div class="reveal" id="rev" hidden>
+        ${c.ans?`<div class="ans">${c.ans}</div>`:""}
+        ${c.ex.map(p=>`<p class="ex">${p}</p>`).join("")}
+      </div>
+    </article>
+    <div class="swipehint" id="hint" hidden>Swipe right if you knew it, left to see it next session</div>`;
+  main.innerHTML=body; main.scrollTop=0;
+  if(c.code) $("code").textContent=c.code;
+  item.wrong=false;
+  if(c.opts){
+    foot.innerHTML=`<button class="btn" disabled style="opacity:.55">Pick an answer</button>`;
+    main.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+      const chosen=decodeURIComponent(b.dataset.o);
+      main.querySelectorAll(".opt").forEach(x=>{
+        x.disabled=true; const v=decodeURIComponent(x.dataset.o);
+        if(v===c.a){x.classList.add("right");x.querySelector(".mk").textContent="Correct";}
+      });
+      if(chosen!==c.a){ b.classList.add("wrong"); b.querySelector(".mk").textContent="Your pick"; item.wrong=true; }
+      reveal(item);
+    });
+  } else {
+    foot.innerHTML=`<button class="btn primary" id="rv">Show answer</button>`;
+    $("rv").onclick=()=>reveal(item);
+  }
+}
+function reveal(item){
+  $("rev").hidden=false; $("hint").hidden=false;
+  const againHl = item.wrong ? " hl" : "";
+  foot.innerHTML=`<button class="btn again${againHl}" id="ag">Again<small>first up next session</small></button>
+                  <button class="btn good" id="ok">Got it<small>${nextLabel(item)}</small></button>`;
+  $("ag").onclick=()=>grade(item,false);
+  $("ok").onclick=()=>grade(item,true);
+  setTimeout(()=>{ const r=$("rev"); if(r && r.getBoundingClientRect().bottom>main.getBoundingClientRect().bottom) r.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth", block:"nearest"}); },60);
+  enableSwipe(item);
+}
+function nextLabel(item){
+  const st=S.cards[item.c.id]; const b=Math.min((st?st.b:0)+1,5); const d=INTERVALS[b];
+  return `back in ${d} day${d>1?"s":""}`;
+}
+function grade(item,ok){
+  const id=item.c.id, st=S.cards[id]||{b:0,due:0};
+  if(ok){ st.b=Math.min(st.b+1,5); st.due=Date.now()+INTERVALS[st.b]*DAY; delete st.again; }
+  else { st.b=0; st.due=Date.now(); st.again=true; } // not repeated this session; first up next session
+  S.cards[id]=st; save();
+  sess.results.push({c:item.c,ok});
+  const card=$("card");
+  if(card && !matchMedia("(prefers-reduced-motion: reduce)").matches){
+    card.style.transform=`translateX(${ok?40:-40}px)`; card.style.opacity="0";
+    setTimeout(()=>{sess.pos++;show();},180);
+  } else { sess.pos++; show(); }
+}
+function enableSwipe(item){
+  const card=$("card"); if(!card) return;
+  let x0=null,y0=null,dx=0;
+  card.addEventListener("touchstart",e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;dx=0;card.style.transition="none";},{passive:true});
+  card.addEventListener("touchmove",e=>{ if(x0===null) return; dx=e.touches[0].clientX-x0; const dy=e.touches[0].clientY-y0;
+    if(Math.abs(dx)>Math.abs(dy)) card.style.transform=`translateX(${dx*0.6}px) rotate(${dx*0.02}deg)`; },{passive:true});
+  card.addEventListener("touchend",()=>{ card.style.transition="";
+    if(Math.abs(dx)>90){ grade(item,dx>0); } else card.style.transform="";
+    x0=null; });
+}
+function finish(){
+  const t=today();
+  if(S.streak.last!==t){ S.streak.count = (S.streak.last===yesterday()) ? S.streak.count+1 : 1; S.streak.last=t; }
+  S.sessions++; save(); renderStreak();
+  // collapse retries: final verdict per card
+  const final={}; sess.results.forEach(r=>{ final[r.c.id]=r; });
+  const rows=Object.values(final);
+  const got=rows.filter(r=>r.ok).length, again=rows.length-got;
+  const mins=Math.max(1,Math.round((Date.now()-sess.t0)/60000));
+  main.innerHTML=`<section class="done">
+      <h2>Done.<br>Phone down.</h2>
+      <p>${rows.length} cards in about ${mins} min. ${got} solid${again?`, ${again} to open your next session`:""}. Streak: ${liveStreak()} day${liveStreak()>1?"s":""}.</p>
+      <div class="recap">${rows.map(r=>`<div style="--tc:var(${TC[r.c.t]})"><i></i><span>${stripTags(r.c.q)}</span><em class="${r.ok?"g":"a"}">${r.ok?"Got it":"Again"}</em></div>`).join("")}</div>
+    </section>`;
+  foot.innerHTML=`<button class="btn" id="hm">Back to deck</button><button class="btn primary" id="more">One more round</button>`;
+  $("hm").onclick=home; $("more").onclick=start;
+  main.scrollTop=0;
+}
+function stripTags(s){ const d=document.createElement("div"); d.innerHTML=s; const t=d.textContent; return t.length>78?t.slice(0,76)+"…":t; }
+
+$("homeBtn").onclick=()=>{ sess ? home() : picker(); };
+picker();
+</script>
+</body>
+</html>
